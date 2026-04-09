@@ -234,8 +234,9 @@ function askAI() {
                 showError('aiError', 'Error: ' + data.error);
             } else {
                 console.log('[SUCCESS] Answer received');
+                console.log('[DEBUG] Answer data:', data.question.answer);
                 displayChatMessage('user', question);
-                displayChatMessage('ai', data.question.answer);
+                displayChatMessage('ai', data.question.answer.ai_response, data.question.answer.tags);
                 document.getElementById('question').value = '';
                 loadHistory();
             }
@@ -247,20 +248,19 @@ function askAI() {
         });
 }
 
-function displayChatMessage(sender, data) {
+function displayChatMessage(sender, response, tags = []) {
     const chatBox = document.getElementById('chatBox');
     const div = document.createElement('div');
     div.className = `chat-message ${sender}`;
 
     if (sender === 'user') {
-        div.innerHTML = `<div class="message-content">${escapeHtml(data)}</div>`;
+        div.innerHTML = `<div class="message-content">${escapeHtml(response)}</div>`;
     } else {
-        // data is the answer object
-        const tags = data.answer?.tags || [];
+        // response is the AI response string, tags is the tags array
         div.innerHTML = `
             <div class="message-content">
-                <div class="ai-response">${escapeHtml(data.answer?.response || '')}</div>
-                ${tags.length > 0 ? `<div class="tags">${tags.map(tag => `<span>${tag}</span>`).join('')}</div>` : ''}
+                <div class="ai-response">${escapeHtml(response || '')}</div>
+                ${tags && tags.length > 0 ? `<div class="tags">${tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
             </div>
         `;
     }
