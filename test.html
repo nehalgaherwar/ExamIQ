@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ExamIQ - Quick Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #667eea; }
+        .test-section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #667eea; }
+        input, button { padding: 8px 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #667eea; color: white; cursor: pointer; }
+        button:hover { background: #764ba2; }
+        .result { background: #f0f0f0; padding: 10px; margin-top: 10px; border-radius: 4px; font-family: monospace; max-height: 200px; overflow-y: auto; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📘 ExamIQ - Quick Test Panel</h1>
+        <p class="info">Test the API endpoints directly</p>
+
+        <!-- Test 1: Signup -->
+        <div class="test-section">
+            <h3>1. Test Signup</h3>
+            <input type="text" id="signupUser" placeholder="Username" value="quicktest">
+            <input type="password" id="signupPass" placeholder="Password" value="test123456">
+            <button onclick="testSignup()">Sign Up</button>
+            <div id="signupResult" class="result"></div>
+        </div>
+
+        <!-- Test 2: Login -->
+        <div class="test-section">
+            <h3>2. Test Login</h3>
+            <input type="text" id="loginUser" placeholder="Username" value="testuser">
+            <input type="password" id="loginPass" placeholder="Password" value="test123456">
+            <button onclick="testLogin()">Login</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <!-- Test 3: Ask Question -->
+        <div class="test-section">
+            <h3>3. Test AI Question (Requires Token from Login)</h3>
+            <input type="text" id="question" placeholder="Your question" value="What is photosynthesis?">
+            <select id="language">
+                <option value="English">English</option>
+                <option value="Hinglish">Hinglish</option>
+                <option value="Hindi">Hindi</option>
+            </select>
+            <select id="marks">
+                <option value="2">2 Marks</option>
+                <option value="5">5 Marks</option>
+                <option value="10">10 Marks</option>
+            </select>
+            <button onclick="testQuestion()">Ask Question</button>
+            <div id="questionResult" class="result"></div>
+        </div>
+
+        <!-- Test 4: Get History -->
+        <div class="test-section">
+            <h3>4. Test History (Requires Token)</h3>
+            <button onclick="testHistory()">Get History</button>
+            <div id="historyResult" class="result"></div>
+        </div>
+
+        <div class="info" style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Click "Sign Up" or use the default test user "testuser" / "test123456"</li>
+                <li>Click "Login" to get a session token</li>
+                <li>Use the token to ask questions</li>
+                <li>View history of your questions and answers</li>
+            </ol>
+            <strong>Backend URL:</strong> http://localhost:5000/api
+        </div>
+    </div>
+
+    <script>
+        let currentToken = null;
+
+        function log(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            el.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function testSignup() {
+            const user = document.getElementById('signupUser').value;
+            const pass = document.getElementById('signupPass').value;
+            document.getElementById('signupResult').innerHTML = '';
+
+            fetch('http://localhost:5000/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        log('signupResult', `Error: ${d.error}`, true);
+                    } else {
+                        log('signupResult', `✓ Created user: ${d.user.username}`);
+                    }
+                })
+                .catch(e => log('signupResult', `Connection Error: ${e.message}`, true));
+        }
+
+        function testLogin() {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            document.getElementById('loginResult').innerHTML = '';
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        log('loginResult', `Error: ${d.error}`, true);
+                    } else {
+                        currentToken = d.token;
+                        log('loginResult', `✓ Logged in as ${d.user.username}`);
+                        log('loginResult', `✓ Token: ${d.token.substring(0, 20)}...`);
+                    }
+                })
+                .catch(e => log('loginResult', `Connection Error: ${e.message}`, true));
+        }
+
+        function testQuestion() {
+            if (!currentToken) {
+                log('questionResult', 'Error: Please login first to get token', true);
+                return;
+            }
+
+            const q = document.getElementById('question').value;
+            const lang = document.getElementById('language').value;
+            const marks = parseInt(document.getElementById('marks').value);
+            document.getElementById('questionResult').innerHTML = '';
+
+            fetch('http://localhost:5000/api/questions/ask', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: q,
+                    language: lang,
+                    difficulty_marks: marks
+                })
+            })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        log('questionResult', `Error: ${d.error}`, true);
+                    } else {
+                        log('questionResult', `✓ Question: ${d.question.question_text}`);
+                        log('questionResult', `✓ Language: ${d.question.language} (${d.question.difficulty_marks} marks)`);
+                        log('questionResult', `✓ Answer: ${d.question.answer.response.substring(0, 100)}...`);
+                        log('questionResult', `✓ Tags: ${d.question.answer.tags.join(', ')}`);
+                    }
+                })
+                .catch(e => log('questionResult', `Connection Error: ${e.message}`, true));
+        }
+
+        function testHistory() {
+            if (!currentToken) {
+                log('historyResult', 'Error: Please login first to get token', true);
+                return;
+            }
+
+            document.getElementById('historyResult').innerHTML = '';
+
+            fetch('http://localhost:5000/api/history/outputs', {
+                headers: { 'Authorization': `Bearer ${currentToken}` }
+            })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        log('historyResult', `Error: ${d.error}`, true);
+                    } else {
+                        log('historyResult', `✓ Total outputs: ${d.total}`);
+                        d.outputs.forEach((o, i) => {
+                            log('historyResult', `${i + 1}. Q: ${o.question.substring(0, 40)}... (${o.language})`);
+                        });
+                    }
+                })
+                .catch(e => log('historyResult', `Connection Error: ${e.message}`, true));
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            console.log('✓ Test page loaded');
+            console.log('ℹ API Base: http://localhost:5000/api');
+        });
+    </script>
+</body>
+</html>

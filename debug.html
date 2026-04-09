@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ExamIQ - Debug</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #1e1e1e; color: #00ff00; }
+        .box { background: #2d2d2d; padding: 15px; margin: 10px 0; border: 1px solid #444; border-radius: 5px; }
+        button { padding: 10px 20px; background: #0066ff; color: white; cursor: pointer; border: none; font-size: 14px; }
+        button:hover { background: #0044cc; }
+        .response { background: #1a1a1a; padding: 10px; margin-top: 10px; overflow-x: auto; max-height: 300px; }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+    </style>
+</head>
+<body>
+    <h2>ExamIQ Debug Console</h2>
+
+    <div class="box">
+        <h3>Step 1: API Connection Test</h3>
+        <button onclick="testConnection()">Test API Connection</button>
+        <div id="test1" class="response"></div>
+    </div>
+
+    <div class="box">
+        <h3>Step 2: Login Test</h3>
+        <button onclick="testLoginAPI()">Login & Get Token</button>
+        <div id="test2" class="response"></div>
+    </div>
+
+    <div class="box">
+        <h3>Step 3: Ask Question Test</h3>
+        <button onclick="testQuestionAPI()">Ask Question</button>
+        <div id="test3" class="response"></div>
+    </div>
+
+    <div class="box">
+        <h3>Logs</h3>
+        <div id="logs" class="response"></div>
+    </div>
+
+    <script>
+        let token = null;
+
+        function log(msg) {
+            const logsDiv = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            logsDiv.innerHTML += `[${time}] ${msg}\n`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(msg);
+        }
+
+        function testConnection() {
+            log('Testing API connection...');
+            const resultDiv = document.getElementById('test1');
+            resultDiv.innerHTML = '<span class="success">Testing...</span>\n';
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'test', password: 'test' })
+            })
+                .then(res => {
+                    log(`✓ Server responded with status: ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    log('✓ Successfully got JSON response');
+                    resultDiv.innerHTML += `<span class="success">✓ API is reachable!\n</span>`;
+                    resultDiv.innerHTML += `Response keys: ${Object.keys(data).join(', ')}\n`;
+                })
+                .catch(err => {
+                    log(`✗ ERROR: ${err.message}`);
+                    resultDiv.innerHTML = `<span class="error">✗ Connection Failed:\n${err.message}</span>`;
+                });
+        }
+
+        function testLoginAPI() {
+            log('Testing login...');
+            const resultDiv = document.getElementById('test2');
+            resultDiv.innerHTML = '<span class="success">Logging in...</span>\n';
+
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'testuser', password: 'test123456' })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.token) {
+                        token = data.token;
+                        log(`✓ Login successful! Token: ${token.substring(0, 20)}...`);
+                        resultDiv.innerHTML = `<span class="success">✓ Login Successful!\n`;
+                        resultDiv.innerHTML += `Token: ${token}\n`;
+                        resultDiv.innerHTML += `User: ${data.user.username}</span>`;
+                    } else {
+                        log('✗ No token in response');
+                        resultDiv.innerHTML = `<span class="error">✗ Login failed (no token)</span>`;
+                    }
+                })
+                .catch(err => {
+                    log(`✗ ERROR: ${err.message}`);
+                    resultDiv.innerHTML = `<span class="error">✗ Error:\n${err.message}</span>`;
+                });
+        }
+
+        function testQuestionAPI() {
+            if (!token) {
+                log('✗ No token available. Login first!');
+                document.getElementById('test3').innerHTML = '<span class="error">✗ Please login first!</span>';
+                return;
+            }
+
+            log('Testing question API...');
+            const resultDiv = document.getElementById('test3');
+            resultDiv.innerHTML = '<span class="success">Sending question...</span>\n';
+
+            fetch('http://localhost:5000/api/questions/ask', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    question: 'What is AI?',
+                    language: 'English',
+                    difficulty_marks: 5
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.question) {
+                        log('✓ Question API successful!');
+                        resultDiv.innerHTML = `<span class="success">✓ Answer Received!\n`;
+                        resultDiv.innerHTML += `Q: ${data.question.question_text}\n`;
+                        resultDiv.innerHTML += `A: ${data.question.answer.response.substring(0, 100)}...\n`;
+                        resultDiv.innerHTML += `Tags: ${data.question.answer.tags.join(', ')}</span>`;
+                    } else {
+                        log(`✗ No answer in response: ${JSON.stringify(data)}`);
+                        resultDiv.innerHTML = `<span class="error">✗ Error:\n${data.error || 'Unknown error'}</span>`;
+                    }
+                })
+                .catch(err => {
+                    log(`✗ ERROR: ${err.message}`);
+                    resultDiv.innerHTML = `<span class="error">✗ Error:\n${err.message}</span>`;
+                });
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('=== Debug Console Started ===');
+            log('Click buttons below to test each component');
+            log('');
+        });
+    </script>
+</body>
+</html>

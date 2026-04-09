@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamIQ - Simple</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+
+        .auth { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2); }
+        .auth-box { background: white; padding: 40px; border-radius: 12px; width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); text-align: center; }
+        .auth-box h2 { margin-bottom: 20px; color: #333; }
+        .auth-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
+        .auth-box button { width: 100%; padding: 10px; margin: 15px 0; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .auth-box button:hover { background: #764ba2; }
+        .auth-error { color: red; margin: 10px 0; }
+        .toggle-link { color: #667eea; cursor: pointer; font-weight: bold; }
+
+        .main-app { display: flex; flex-direction: column; height: 100vh; }
+        .topbar { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 30px; display: flex; justify-content: space-between; }
+        .btn-logout { padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; border-radius: 6px; cursor: pointer; }
+
+        .container { display: flex; flex: 1; gap: 20px; padding: 20px; }
+        .left-panel { width: 30%; overflow-y: auto; }
+        .right-panel { flex: 1; display: flex; flex-direction: column; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        .section { background: white; padding: 20px; margin-bottom: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .section h3 { margin-bottom: 15px; color: #333; }
+
+        .item { padding: 10px; background: #f8f9fa; border-left: 3px solid #667eea; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+
+        .right-panel h2 { padding: 20px; border-bottom: 1px solid #eee; margin: 0; }
+        .chat-box { flex: 1; padding: 20px; overflow-y: auto; }
+        .msg { padding: 10px 15px; margin:10px 0; border-radius: 8px; max-width: 80%; }
+        .msg.user { background: #667eea; color: white; margin-left: auto; }
+        .msg.ai { background: #f1f3f5; }
+
+        .input-section { padding: 20px; border-top: 1px solid #eee; }
+        textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical; min-height: 50px; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 6px; margin: 5px 5px 5px 0; }
+        .btn-ask { width: 100%; padding: 12px; margin-top: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-ask:hover { background: #764ba2; }
+
+        .spinner { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .spinner.show { display: flex !important; }
+        .spinner-inner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error { color: red; font-size: 12px; margin: 5px 0; }
+        .success { color: green; font-size: 12px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authPage" class="auth">
+    <div class="auth-box">
+        <h2 id="formTitle">Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleAuth()">Submit</button>
+        <div id="authError" class="auth-error"></div>
+        <p style="margin-top: 20px;">
+            Don't have an account? <span class="toggle-link" onclick="toggleForm()">Sign up</span>
+        </p>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="mainApp" style="display: none;" class="main-app">
+    <div class="topbar">
+        <h1>📘 ExamIQ</h1>
+        <div>
+            <span id="userName" style="color: white; margin-right: 20px;"></span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- LEFT -->
+        <div class="left-panel">
+            <div class="section">
+                <h3>📄 Upload</h3>
+                <input type="file" id="fileInput" style="width: 100%;">
+                <button style="width: 100%; padding: 8px; margin-top: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;" onclick="uploadFile()">Upload</button>
+                <div id="uploadMsg"></div>
+            </div>
+
+            <div class="section">
+                <h3>📚 Docs</h3>
+                <div id="docsList">
+                    <div class="item">No docs</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📜 History</h3>
+                <div id="historyList">
+                    <div class="item">No history</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right-panel">
+            <h2>🤖 AI Assistant</h2>
+            <div class="chat-box" id="chatBox">
+                <div class="msg ai">Hello! Ask me exam questions.</div>
+            </div>
+
+            <div class="input-section">
+                <textarea id="question" placeholder="Ask your question..."></textarea>
+
+                <div>
+                    <select id="language">
+                        <option value="English">English</option>
+                        <option value="Hinglish">Hinglish</option>
+                        <option value="Hindi">Hindi</option>
+                    </select>
+                    <select id="marks">
+                        <option value="2">2 Marks</option>
+                        <option value="5">5 Marks</option>
+                        <option value="10">10 Marks</option>
+                    </select>
+                </div>
+
+                <button class="btn-ask" onclick="askQuestion()">Get Answer</button>
+                <div id="aiError" class="error"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="spinner" class="spinner">
+    <div class="spinner-inner"></div>
+</div>
+
+<script>
+    const API = 'http://localhost:5000/api';
+    let token = null;
+    let user = null;
+    let isLogin = true;
+
+    console.log('[INFO] ExamIQ loaded');
+
+    function toggleForm() {
+        isLogin = !isLogin;
+        document.getElementById('formTitle').innerText = isLogin ? 'Login' : 'Sign Up';
+    }
+
+    function handleAuth() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+            document.getElementById('authError').innerText = 'Enter username and password';
+            return;
+        }
+
+        const url = isLogin ? '/auth/login' : '/auth/signup';
+
+        fetch(API + url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        })
+            .then(r => r.json())
+            .then(d => {
+                if (d.error) {
+                    document.getElementById('authError').innerText = d.error;
+                } else if (d.token) {
+                    token = d.token;
+                    user = d.user;
+                    document.getElementById('authPage').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'flex';
+                    document.getElementById('userName').innerText = 'Welcome, ' + user.username;
+                    loadData();
+                } else {
+                    alert('Signup successful! Please login.');
+                    toggleForm();
+                }
+            })
+            .catch(e => document.getElementById('authError').innerText = e.message);
+    }
+
+    function logout() {
+        token = null;
+        location.reload();
+    }
+
+    function uploadFile() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return;
+
+        const form = new FormData();
+        form.append('file', file);
+
+        showSpinner(true);
+        fetch(API + '/documents/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: form
+        })
+            .then(r => r.json())
+            .then(d => {
+                showSpinner(false);
+                if (d.error) {
+                    document.getElementById('uploadMsg').innerHTML = '<div class="error">' + d.error + '</div>';
+                } else {
+                    document.getElementById('uploadMsg').innerHTML = '<div class="success">✓ Uploaded</div>';
+                    loadData();
+                }
+            })
+            .catch(e => {
+                showSpinner(false);
+                document.getElementById('uploadMsg').innerHTML = '<div class="error">' + e.message + '</div>';
+            });
+    }
+
+    function loadData() {
+        fetch(API + '/documents/list', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+            .then(r => r.json())
+            .then(d => {
+                const list = document.getElementById('docsList');
+                if (!d.documents || d.documents.length === 0) {
+                    list.innerHTML = '<div class="item">No documents</div>';
+                } else {
+                    list.innerHTML = d.documents.map(doc =>
+                        '<div class="item"><b>' + doc.filename + '</b><br><small>' + new Date(doc.upload_date).toLocaleDateString() + '</small></div>'
+                    ).join('');
+                }
+            });
+
+        fetch(API + '/history/outputs', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+            .then(r => r.json())
+            .then(d => {
+                const list = document.getElementById('historyList');
+                if (!d.outputs || d.outputs.length === 0) {
+                    list.innerHTML = '<div class="item">No history</div>';
+                } else {
+                    list.innerHTML = d.outputs.slice(0, 5).map(o =>
+                        '<div class="item"><b>' + o.question.substring(0, 25) + '...</b><br><small>' + o.language + '</small></div>'
+                    ).join('');
+                }
+            });
+    }
+
+    function askQuestion() {
+        const q = document.getElementById('question').value.trim();
+        if (!q) {
+            document.getElementById('aiError').innerText = 'Ask a question';
+            return;
+        }
+
+        showSpinner(true);
+        fetch(API + '/questions/ask', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                question: q,
+                language: document.getElementById('language').value,
+                difficulty_marks: parseInt(document.getElementById('marks').value)
+            })
+        })
+            .then(r => r.json())
+            .then(d => {
+                showSpinner(false);
+                if (d.error) {
+                    document.getElementById('aiError').innerText = d.error;
+                } else {
+                    addMsg('user', q);
+                    const ans = d.question.answer;
+                    addMsg('ai', ans.response);
+                    document.getElementById('question').value = '';
+                    loadData();
+                }
+            })
+            .catch(e => {
+                showSpinner(false);
+                document.getElementById('aiError').innerText = e.message;
+            });
+    }
+
+    function addMsg(role, text) {
+        const box = document.getElementById('chatBox');
+        const div = document.createElement('div');
+        div.className = 'msg ' + role;
+        div.innerText = text;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function showSpinner(show) {
+        document.getElementById('spinner').className = show ? 'spinner show' : 'spinner';
+    }
+</script>
+
+</body>
+</html>

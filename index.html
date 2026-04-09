@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamIQ – AI Exam Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="authPage" class="auth">
+    <div class="auth-box">
+        <h2 id="formTitle">Login</h2>
+        <p class="auth-subtitle">Welcome to ExamIQ - Your AI Study Companion</p>
+
+        <input type="text" id="username" placeholder="Username" class="auth-input">
+        <input type="password" id="password" placeholder="Password" class="auth-input">
+
+        <button onclick="handleAuth()" class="auth-btn">Submit</button>
+
+        <p id="toggleText" class="toggle-text">
+            Don't have an account?
+            <span onclick="toggleForm()" class="toggle-link">Signup</span>
+        </p>
+
+        <div id="authError" class="error-message" style="display:none;"></div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none;" class="main-app">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>📘 ExamIQ – AI Exam Assistant</h1>
+        </div>
+
+        <div class="topbar-right">
+            <span id="userDisplay" class="user-name"></span>
+            <button onclick="logout()" class="btn-logout">Logout</button>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="container">
+
+        <!-- LEFT PANEL - DOCUMENTS & HISTORY -->
+        <div class="left-panel">
+
+            <!-- DOCUMENT UPLOAD -->
+            <div class="section">
+                <h3>📄 Upload Document</h3>
+                <div class="upload-box" id="uploadBox">
+                    <p>Drag and drop or click to upload</p>
+                    <small>PDF, DOC, TXT (Max 50MB)</small>
+                    <input type="file" id="fileInput" style="display:none;" onchange="handleFileUpload(event)">
+                </div>
+                <div id="uploadError" class="error-message" style="display:none;"></div>
+                <div id="uploadSuccess" class="success-message" style="display:none;"></div>
+            </div>
+
+            <!-- DOCUMENTS LIST -->
+            <div class="section">
+                <h3>📚 Your Documents</h3>
+                <div id="documentsList" class="documents-list">
+                    <p class="placeholder">No documents uploaded yet</p>
+                </div>
+            </div>
+
+            <!-- HISTORY -->
+            <div class="section">
+                <h3>📜 Recent Outputs</h3>
+                <div id="historyList" class="history-list">
+                    <p class="placeholder">No exam outputs yet</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT PANEL - AI CHAT -->
+        <div class="right-panel">
+            <h2>🤖 AI Exam Assistant</h2>
+
+            <div id="chatBox" class="chat-box">
+                <div class="chat-message ai">
+                    <div class="message-content">Hello! 👋 Upload a document and ask me exam-oriented questions.</div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <textarea id="question" class="question-input" placeholder="Ask your exam question..."></textarea>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Language:</label>
+                        <select id="language" class="select-control">
+                            <option value="English">English</option>
+                            <option value="Hinglish">Hinglish</option>
+                            <option value="Hindi">Hindi</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Marks:</label>
+                        <select id="difficulty" class="select-control">
+                            <option value="2">2 Marks</option>
+                            <option value="5">5 Marks</option>
+                            <option value="10">10 Marks</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Document:</label>
+                        <select id="documentSelect" class="select-control">
+                            <option value="">General Knowledge</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="askAI()" class="btn-primary">Get Exam Answer</button>
+            </div>
+
+            <div id="aiError" class="error-message" style="display:none;"></div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- LOADING SPINNER -->
+<div id="loadingSpinner" class="loading-spinner" style="display:none;">
+    <div class="spinner"></div>
+    <p>Processing...</p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
